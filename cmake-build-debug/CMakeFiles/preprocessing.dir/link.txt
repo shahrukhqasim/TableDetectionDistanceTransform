@@ -1,0 +1,1 @@
+/usr/bin/c++   -g   CMakeFiles/preprocessing.dir/main.cpp.o  -o preprocessing  -L/usr/local/lib -lopencv_core -lopencv_imgproc -ltesseract -llept -lopencv_highgui -lopencv_imgcodecs -Wl,-rpath,/usr/local/lib 

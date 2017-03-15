@@ -1,0 +1,3 @@
+/home/azka/CLionProjects/preprocessing/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/azka/CLionProjects/preprocessing/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/azka/CLionProjects/preprocessing/cmake-build-debug/CMakeFiles/preprocessing.dir
