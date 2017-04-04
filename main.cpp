@@ -11,78 +11,41 @@ using namespace cv;
 using namespace std;
 
 
-void binarizeShafait(Mat &gray, Mat &binary, int w, double k) {
-    Mat sum, sumsq;
-    gray.copyTo(binary);
-    int half_width = w >> 1;
-    integral(gray, sum, sumsq, CV_64F);
-    for (int i = 0; i < gray.rows; i++) {
-        for (int j = 0; j < gray.cols; j++) {
-            int x_0 = (i > half_width) ? i - half_width : 0;
-            int y_0 = (j > half_width) ? j - half_width : 0;
-            int x_1 = (i + half_width >= gray.rows) ? gray.rows - 1 : i + half_width;
-            int y_1 = (j + half_width >= gray.cols) ? gray.cols - 1 : j + half_width;
-            double area = (x_1 - x_0) * (y_1 - y_0);
-            double mean = (sum.at<double>(x_0, y_0) + sum.at<double>(x_1, y_1) - sum.at<double>(x_0, y_1) -
-                           sum.at<double>(x_1, y_0)) / area;
-            double sq_mean = (sumsq.at<double>(x_0, y_0) + sumsq.at<double>(x_1, y_1) - sumsq.at<double>(x_0, y_1) -
-                              sumsq.at<double>(x_1, y_0)) / area;
-            double stdev = sqrt(sq_mean - (mean * mean));
-            double threshold = mean * (1 + k * ((stdev / 128) - 1));
-            if (gray.at<uchar>(i, j) > threshold)
-                binary.at<uchar>(i, j) = 255;
-            else
-                binary.at<uchar>(i, j) = 0;
-        }
-    }
-}
-
-
 int main() {
 
     std::vector<cv::String> filenames;
     cv::String folder = "/home/azka/Desktop/data/transformed/Images1";
     glob(folder, filenames);
     int j=0;
+    double alpha = 0.33;
+    double beta=1-alpha;
     for(size_t i = 0; i < filenames.size(); ++i) {
+
         string bname = basename(filenames[i].c_str());
+        Mat src = imread(filenames[i],0);
 
-        Mat src = imread(filenames[i]);
-        cv::Mat bgr[3], channel_blue, channel_green, channel_red;   //destination array
+        Mat dist_red, dist_blue, dist_green,dist_new;
+        distanceTransform(src, dist_blue, CV_DIST_L1, 3);
+        distanceTransform(src, dist_green, CV_DIST_L2, 3);
+        distanceTransform(src, dist_new, CV_DIST_C, 3);
 
-        cv::split(src, bgr);//split source
+        src.convertTo(dist_red,dist_green.type());
 
-        channel_blue = bgr[0];
-        channel_green = bgr[1];
-        channel_red = bgr[2];
-        cout << channel_red.channels();
+        Mat avg_blue,avg_green,avg_red;
+        addWeighted( dist_blue, alpha, dist_red, beta, 0.0, avg_blue);
+        addWeighted( dist_green, alpha, dist_red, beta, 0.0, avg_green);
+        addWeighted( dist_new, alpha, dist_red, beta, 0.0, avg_red);
 
-        Mat bw;
-        cvtColor(src, bw, CV_BGR2GRAY);
-        threshold(bw, bw, 40, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-        cout << bw.channels();
-
-        // Perform the distance transform algorithm
-        Mat dist_red, dist_blue, dist_green;
-        distanceTransform(channel_red, dist_blue, CV_DIST_L1, 3);
-        distanceTransform(channel_blue, dist_green, CV_DIST_L1, 3);
-        distanceTransform(channel_green, dist_red, CV_DIST_L1, 3);
-
-    //    normalize(dist_blue, dist_blue, 0, 1., NORM_MINMAX);
-    //    normalize(dist_blue, dist_green, 0, 1., NORM_MINMAX);
-    //    normalize(dist_blue, dist_red, 0, 1., NORM_MINMAX);
-
+        cout<<"RED CHANNELS "<<avg_red.channels();
         std::vector<cv::Mat> array_to_merge;
+        array_to_merge.push_back(avg_red);
+        array_to_merge.push_back(avg_green);
+        array_to_merge.push_back(avg_blue);
 
-        array_to_merge.push_back(dist_blue);
-        array_to_merge.push_back(dist_green);
-        array_to_merge.push_back(dist_red);
-
-        cv::Mat color;
-
-        cv::merge(array_to_merge, color);
-
-        imwrite(bname, color);
+        cv::Mat colored;
+        cv::merge(array_to_merge, colored);
+        cout<<"HEELOOO"<<colored.depth();
+        imwrite(bname,colored);
 
     }
 
